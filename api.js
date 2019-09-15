@@ -13,6 +13,7 @@ const pool = mysql.createPool({
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const sqls = require('./sqls');
+let stopList = true; // from Client in json whether stop list is ON/OFF
 
  const oneToStopList = (pair) => { // IMPORTANT: addtion to stop list w/o simplified lookup
   return new Promise( (resolve, reject) => {
@@ -36,7 +37,7 @@ const sqls = require('./sqls');
 
   const manyTrans = (arr) => {
     return new Promise( (resolve, reject) => {
-      pool.query(sqls.smtr, [arr], (err, res) => {
+      pool.query(sqls.smtr, [arr, arr], (err, res) => {
         if (err) { reject(err) }
         resolve(res);
       });
@@ -46,7 +47,7 @@ const sqls = require('./sqls');
 
   const oneTrans = (arr) => {
     return new Promise( (resolve, reject) => {
-      pool.query(sqls.hitr, [arr], (err, res) => {
+      pool.query(sqls.hitr, [arr, arr], (err, res) => {
         if (err) { reject(err) }
         let rez = [];
         if ( typeof res !== 'undefined' ){
@@ -63,7 +64,7 @@ const sqls = require('./sqls');
 
   const stopListOne = (ones) => {
     return new Promise( (resolve, reject) => {
-      pool.query(sqls.stop, [ones], (err, res) => {
+      pool.query(sqls.stop, [ones, ones], (err, res) => {
         if (err) { reject(err) }
         resolve(res);
       });
@@ -72,48 +73,75 @@ const sqls = require('./sqls');
 
   const stopListMany = (many) => {
     return new Promise( (resolve, reject) => {
-      pool.query(sqls.stop, [many], (err, res) => {
+      pool.query(sqls.stop, [many, many], (err, res) => {
         if (err) { reject(err) }
         resolve(res);
       });
     });
   };
 
-  async function getTranslation (ones, manys){
+  async function getTranslation (stopList, ones, manys){
 
     const oneStopList = await stopListOne(ones);
-    let oneList = [], oneChkd = [], manyChkd = [];
+    let oneList = [], oneChkd = [], manyChkd = [], oneTranList = [], manyTranList = [];
     for (let one of JSON.parse(JSON.stringify(oneStopList)) ){
-      oneList.push(one.bkrs_sm);
+      oneList.push({'tr':one.bkrs_tr, sm:one.bkrs_sm});
     }
-    console.log('oneList: ', oneList);
+    // console.log('oneList: ', oneList);
 
     const manyStopList = await stopListMany(manys);
     let manyList = [];
     for (let one of JSON.parse(JSON.stringify(manyStopList)) ){
-      manyList.push(one.bkrs_sm);
+      manyList.push({'tr':one.bkrs_tr, sm:one.bkrs_sm});
     }
-    console.log('manyList: ', manyList);
+    // console.log('manyList: ', manyList);
+    // console.log('stopList: ', stopList);
 
     for (let o of ones ){ // check against our stoplist (hieroglyphs)
-      if ( oneList.indexOf(o) === -1 ){
+      if( stopList ){
+        let inStop = false;
+        for( let os of oneList ){
+          if ( o === os.tr || o === os.sm ){
+            inStop = true;
+          }
+        }
+        if( !inStop ) {
+          oneChkd.push(o);
+        }
+      } else {
         oneChkd.push(o);
       }
     }
 
     for (let m of manys ){ // check against our stoplist (words)
-      if ( manyList.indexOf(m) === -1 ){
+      if( stopList ){
+        let inStop = false;
+        for( let os of manyList ){
+          if ( m === os.tr || m === os.sm ){
+            inStop = true;
+          }
+        }
+        if( !inStop ) {
+          manyChkd.push(m);
+        }
+      } else {
         manyChkd.push(m);
       }
     }
 
     // get translations for valid words and single characters
-    const oneTranList = await oneTrans(oneChkd);
-    const manyTranList = await manyTrans(manyChkd);
+    if ( oneChkd.length ){
+      oneTranList = await oneTrans(oneChkd);
+    }
+    if ( manyChkd.length ){
+      manyTranList = await manyTrans(manyChkd);
+    }
+    // const oneTranList = await oneTrans(oneChkd);
+    // const manyTranList = await manyTrans(manyChkd);
 
     return {
-        one: oneList,
-        many: manyList,
+        // one: oneList,
+        // many: manyList,
         oneChkd: oneChkd,
         ones: ones,
         manys: manys,
@@ -140,7 +168,7 @@ module.exports = (app) => {
     });
   });
   
-  app.post('/api/2stop', jsonParser, (req, res) => { console.log( 'req.body: ', req.body.to)
+  app.post('/api/2stop', jsonParser, (req, res) => { // console.log( 'req.body: ', req.body.to)
     pool.query(sqls.add2stop, [req.body.to.tr, req.body.to.sm], (err, rez) => {
       if (err){
         res.status(200).json({OK: false, error: err});
@@ -164,10 +192,17 @@ module.exports = (app) => {
 
   });
 
+/* app.post('/api/trans' ==>
+  {
+    "sstr":"次繫敍述一種要求直接的語言裡",
+      "stopList":false
+  }
+*/
   app.post('/api/trans', jsonParser, (req, res) => {
-    console.log('TRANS: ', req.body);
+    // console.log('TRANS: ', req.body);
     let outer = [], inner = [], one = [], many = [];
-    outer = req.body.sstr.split(''); // simplified string
+    outer = req.body.sstr.split(''); // ANY (sm/tr) string
+    stopList = req.body.stopList; // true/false == ON/OFF
     inner = outer;
     for(let o = 0; o < outer.length; o++){
       for (let i = 1; i <= inner.length; i++){
@@ -181,9 +216,15 @@ module.exports = (app) => {
         }
       }
     }
-    getTranslation(one, many)
+    getTranslation(stopList, one, many)
     .then( (robj) => {
-      res.status(200).json({OK: true, manyTranList: robj.manyTranList, oneTranList: robj.oneTranList});
+      res
+          .status(200)
+          .json({
+                OK: true,
+                manyTranList: robj.manyTranList,
+                oneTranList: robj.oneTranList
+           });
       // res.status(200).json({OK: true, many: robj.many, one: robj.one, ones: robj.ones, oneChkd: robj.oneChkd, manyChkd: robj.manyChkd, manyTranList: robj.manyTranList, oneTranList: robj.oneTranList});
     })
     .catch( (e) => { res.status(200).json({OK: false, error: e}); });
@@ -200,7 +241,6 @@ module.exports = (app) => {
         let cur = outer;
         let pick = cur.slice(o,i);
         if ( pick.length === 1 ) {
-          //one.push(pick.join(''));
           one.push(pick);
         }
         if ( pick.length > 1 ) {
@@ -222,26 +262,6 @@ module.exports = (app) => {
       res.status(200).json({OK: false, error: e});
     });
 
-  });
-
-
-  app.post('/api/t2s', jsonParser, (req, res) => {
-    console.log('num of tr hi: ', req.body.trad.length);
-    trad2simp(req.body.trad)
-    .then( (sim) => {
-      let resulting = [];
-      for( let s = 0; s < sim.length; s++ ){
-        for ( let t = 0; t < req.body.trad.length; t++ ){
-          if ( (sim[s]['bh_tr'] === req.body.trad[t]) || sim[s]['bh_sm'] === req.body.trad[t] ){
-            resulting[t] = sim[s]['bh_sm'];
-          }
-        }
-      }
-      res.status(200).json({OK: true, trad: req.body.trad, simps: resulting.join('')});
-    })
-    .catch( (e) => {
-      res.status(200).json({OK: false, error: e});
-    });
   });
 
   // OK

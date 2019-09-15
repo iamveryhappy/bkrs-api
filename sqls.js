@@ -5,11 +5,11 @@ const sqls = {};
 sqls.ht2s = 'SELECT bh_tr, bh_sm FROM mova.bkrs_hi WHERE bh_tr IN (?) OR bh_sm IN (?)';
 sqls.wt2s = 'SELECT bw_id, bw_sm, bw_tr FROM mova.bkrs_word WHERE bw_tr IN (?) OR bw_sm IN (?)';
 
-sqls.smtr = 'SELECT bw_id, bw_sm, bw_tr, bw_pin, bw_trans FROM mova.bkrs_word WHERE bw_sm IN (?)';
-sqls.hitr = 'SELECT bh_id, bh_sm, bh_tr, bh_pin, bh_trans FROM mova.bkrs_hi WHERE bh_sm IN (?)';
+sqls.smtr = 'SELECT bw_id, bw_sm, bw_tr, bw_pin, bw_trans FROM mova.bkrs_word WHERE bw_tr IN (?) OR bw_sm IN (?)';
+sqls.hitr = 'SELECT bh_id, bh_sm, bh_tr, bh_pin, bh_trans FROM mova.bkrs_hi WHERE bh_tr IN (?) OR bh_sm IN (?)';
 
 // ops for stop list
-sqls.stop = 'SELECT bkrs_sm FROM mova.bkrs_sl WHERE bkrs_sm IN(?)';
+sqls.stop = 'SELECT bkrs_sm, bkrs_tr FROM mova.bkrs_sl WHERE bkrs_sm IN(?) OR  bkrs_tr IN(?)';
 sqls.one4stop = 'SELECT bh_sm, bh_tr FROM mova.bkrs_hi WHERE bh_sm=? OR bh_tr=?';
 sqls.many4stop = 'SELECT bw_sm, bw_tr FROM mova.bkrs_word WHERE bw_sm=? OR bw_tr=?'
 sqls.add2stop = 'INSERT INTO bkrs_sl(bkrs_tr, bkrs_sm) VALUES(?,?)';
