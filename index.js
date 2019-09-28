@@ -6,11 +6,13 @@ const app = express();
 
 const port = 3000;
 
-app.use(cors({
-	origin: ['http://localhost'],
-	methods: ['GET', 'POST'],
-	allowedHeaders: ['Content-Type']
-}));
+app.use(cors());
+
+// app.use(cors({
+// 	origin: ['*'],
+// 	methods: ['GET', 'POST'],
+// 	allowedHeaders: ['Access-Control-Allow-Methods', 'Access-Control-Allow-Origin', 'Content-Type']
+// }));
 
 require("./api")(app);
 
@@ -19,4 +21,4 @@ app.listen(port, () => {
 });
 
 
-console.log('here we are...');
+// console.log('here we are...');
