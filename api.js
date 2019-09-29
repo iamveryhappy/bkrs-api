@@ -199,7 +199,7 @@ module.exports = (app) => {
   }
 */
   app.post('/api/trans', jsonParser, (req, res) => {
-    // console.log('TRANS: ', req.body);
+ console.log('TRANS: ', req.body);
     let outer = [], inner = [], one = [], many = [];
     outer = req.body.sstr.split(''); // ANY (sm/tr) string
     stopList = req.body.stopList; // true/false == ON/OFF
