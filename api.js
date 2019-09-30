@@ -222,12 +222,13 @@ module.exports = (app) => {
           .status(200)
           .json({
                 OK: true,
+                sstr: req.body.sstr,
                 manyTranList: robj.manyTranList,
                 oneTranList: robj.oneTranList
            });
       // res.status(200).json({OK: true, many: robj.many, one: robj.one, ones: robj.ones, oneChkd: robj.oneChkd, manyChkd: robj.manyChkd, manyTranList: robj.manyTranList, oneTranList: robj.oneTranList});
     })
-    .catch( (e) => { res.status(200).json({OK: false, error: e}); });
+    .catch( (e) => { res.status(200).json({OK: false, error: e, sstr: req.body.sstr}); });
 
   });
 
