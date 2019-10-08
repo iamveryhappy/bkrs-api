@@ -65,7 +65,7 @@ let stopList = true; // from Client in json whether stop list is ON/OFF
   const stopListOne = (ones) => {
     return new Promise( (resolve, reject) => {
       pool.query(sqls.stop, [ones, ones], (err, res) => {
-        if (err) { reject(err) }
+        if (err) { reject('stopListOne:', err) }
         resolve(res);
       });
     });
@@ -74,7 +74,7 @@ let stopList = true; // from Client in json whether stop list is ON/OFF
   const stopListMany = (many) => {
     return new Promise( (resolve, reject) => {
       pool.query(sqls.stop, [many, many], (err, res) => {
-        if (err) { reject(err) }
+        if (err) { reject('stopListOne:', err) }
         resolve(res);
       });
     });
@@ -82,20 +82,21 @@ let stopList = true; // from Client in json whether stop list is ON/OFF
 
   async function getTranslation (stopList, ones, manys){
 
-    const oneStopList = await stopListOne(ones);
-    let oneList = [], oneChkd = [], manyChkd = [], oneTranList = [], manyTranList = [];
-    for (let one of JSON.parse(JSON.stringify(oneStopList)) ){
-      oneList.push({'tr':one.bkrs_tr, sm:one.bkrs_sm});
-    }
-    // console.log('oneList: ', oneList);
+    let oneList = [], oneChkd = [], manyChkd = [], oneTranList = [], manyTranList = [], oneStopList = [], manyStopList = [], manyList = [];
 
-    const manyStopList = await stopListMany(manys);
-    let manyList = [];
-    for (let one of JSON.parse(JSON.stringify(manyStopList)) ){
-      manyList.push({'tr':one.bkrs_tr, sm:one.bkrs_sm});
+    if ( stopList ) {
+      oneStopList = await stopListOne(ones);
+      for (let one of JSON.parse(JSON.stringify(oneStopList)) ){
+        oneList.push({'tr':one.bkrs_tr, sm:one.bkrs_sm});
+      }
+      manyStopList = await stopListMany(manys);
+      for (let one of JSON.parse(JSON.stringify(manyStopList)) ){
+        manyList.push({'tr':one.bkrs_tr, sm:one.bkrs_sm});
+      }
     }
-    // console.log('manyList: ', manyList);
-    // console.log('stopList: ', stopList);
+
+    console.log('manyList: ', manyList);
+    console.log('stopList: ', stopList);
 
     for (let o of ones ){ // check against our stoplist (hieroglyphs)
       if( stopList ){
