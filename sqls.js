@@ -1,6 +1,12 @@
 // sql queries
 const sqls = {};
 
+// fayu-START
+
+sqls.i_text = 'INSERT INTO texts(t_chapter, t_raw, t_mark) VALUES(?,?,?)';
+
+// fayu-END
+
 // traditional to simplified batch lookup
 sqls.ht2s = 'SELECT bh_tr, bh_sm FROM mova.bkrs_hi WHERE bh_tr IN (?) OR bh_sm IN (?)';
 sqls.wt2s = 'SELECT bw_id, bw_sm, bw_tr FROM mova.bkrs_word WHERE bw_tr IN (?) OR bw_sm IN (?)';

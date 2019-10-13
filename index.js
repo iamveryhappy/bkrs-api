@@ -15,6 +15,7 @@ app.use(cors());
 // }));
 
 require("./api")(app);
+require("./fayu")(app);
 
 app.listen(port, () => {
 	console.info( `Server is up & running on port ${port} @ localhost` );
