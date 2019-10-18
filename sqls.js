@@ -1,9 +1,24 @@
 // sql queries
 const sqls = {};
 
-// fayu-START
+sqls.s_lastChapter = 'SELECT MAX(c_id) AS `c_id`, c_chapter FROM fayu.chapters';
+sqls.s_chap = 'SELECT c_id, c_chapter FROM fayu.chapters WHERE c_id=?';
+
+
+// fayu-START: faw_id, bw_id, bw_bh_id, bw_has_tr, bw_length, bw_sm, bw_tr, bw_pin, bw_trans
+sqls.i_faw = 'INSERT INTO fayu_word(bw_id, bw_bh_id, bw_has_tr, bw_length, bw_sm, bw_tr, bw_pin, bw_trans) VALUES(?,?,?,?,?,?,?,?)';
+sqls.s_faw = 'SELECT bw_id, bw_bh_id, bw_has_tr, bw_length, bw_sm, bw_tr, bw_pin, bw_trans FROM fayu_word WHERE faw_id=?';
+
+sqls.i_fa = 'INSERT INTO fayu_hi(bh_id, bh_has_tr, bh_hex, bh_sm, bh_tr, bh_pin, bh_trans) VALUES(?,?,?,?,?,?,?)';
+sqls.s_fa = 'SELECT bh_id, bh_has_tr, bh_hex, bh_sm, bh_tr, bh_pin, bh_trans FROM fayu_hi WHERE fa_id=?';
+
+sqls.i_zct = 'INSERT INTO zici_texts(zct_t_id, zct_bh_id, zct_bw_id) VALUES(?,?,?)';
+sqls.s_zct = 'SELECT (zct_id, zct_t_id, zct_bh_id, zct_bw_id) FROM zici_texts WHERE zct_t_id=?';
+sqls.d_zct = 'DELETE FROM zice_texts WHERE zct_t_id=?';
 
 sqls.i_text = 'INSERT INTO texts(t_chapter, t_raw, t_mark) VALUES(?,?,?)';
+sqls.s_text = 'SELECT t_chapter, t_raw, t_mark FROM texts WHERE t_id=?';
+sqls.d_text = 'DELETE FROM texts WHERE t_id=?';
 
 // fayu-END
 
