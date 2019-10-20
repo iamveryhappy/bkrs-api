@@ -1,7 +1,7 @@
 // sql queries
 const sqls = {};
 
-sqls.s_lastChapter = 'SELECT MAX(c_id) AS `c_id`, c_chapter FROM fayu.chapters';
+sqls.s_lastChapter = 'SELECT c_id, c_chapter FROM fayu.chapters WHERE c_current=1';
 sqls.s_chap = 'SELECT c_id, c_chapter FROM fayu.chapters WHERE c_id=?';
 
 
