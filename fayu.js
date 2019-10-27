@@ -14,17 +14,52 @@ const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const sqls = require('./sqls');
 
+const getCID = () => {
+  return new Promise( (resolve, reject) => {
+    pool.query(sqls.s_lastChapter, (err, rez) => {
+      if (err) { reject( err ) }
+      // console.log('getCID-rez: ', rez);
+      resolve( rez );
+    });
+  });
+};
+
+const insHI = (hi) => {
+  return new Promise( (resolve, reject) => {
+
+  });
+};
+
+
+
+
 module.exports = (app) => {
 
   app.post('/fa/save', jsonParser, (req, res) => {
     console.log('faSAVE:', req.body);
-    res.status(200).json({"OK": true});
+    getCID()
+    .then( (rez) => {
+      console.log('rez: ', JSON.parse(JSON.stringify(rez)));
+      console.log('LID: ', rez[0]['c_id']);
+      return rez;
+      // res.status(200).json({c_id: rez[0]['c_id'], error: null});
+    })
+    .then( (rez) => {
+      console.log('LLID: ', rez[0]['c_id']);
+      return rez;
+    })
+    .then( (rez) => res.status(200).json({c_id: rez[0]['c_id'], error: null}))
+    .catch( e => {
+      console.log(e);
+      res.status(200).json({c_id: null, error: e});
+    });
+
   });
 
   app.get('/fa/getLastChapter', (req, res) => {
     pool.query(sqls.s_lastChapter, (err, rez) => {
       if (err) {
-        res.status(200).json({chapter_name: null, chapter_id: null, error: err})
+        throw err;
       } else if( typeof( rez ) !== 'undefined' && rez.length >= 1 && rez[0]['c_chapter'] ) {
         res.status(200).json({chapter_name: rez[0]['c_chapter'], chapter_id: rez[0]['c_id'], error: null})
       } else {
