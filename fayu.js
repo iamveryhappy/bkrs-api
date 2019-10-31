@@ -24,35 +24,31 @@ const getCID = () => {
   });
 };
 
-const insHI = (hi) => {
+const insHI = (hi) => { console.log('insHI: ', hi);
   return new Promise( (resolve, reject) => {
-
+    pool.query(sqls.copy1_hi_ins, [hi], (err, rez) => {
+      if (err) { reject(err); }
+      resolve( rez );    });
   });
 };
-
-
-
 
 module.exports = (app) => {
 
   app.post('/fa/save', jsonParser, (req, res) => {
     console.log('faSAVE:', req.body);
-    getCID()
-    .then( (rez) => {
-      console.log('rez: ', JSON.parse(JSON.stringify(rez)));
-      console.log('LID: ', rez[0]['c_id']);
-      return rez;
-      // res.status(200).json({c_id: rez[0]['c_id'], error: null});
-    })
-    .then( (rez) => {
-      console.log('LLID: ', rez[0]['c_id']);
-      return rez;
-    })
-    .then( (rez) => res.status(200).json({c_id: rez[0]['c_id'], error: null}))
-    .catch( e => {
-      console.log(e);
-      res.status(200).json({c_id: null, error: e});
-    });
+    let results = {};
+    for (let i of req.body.zi){
+      console.log('I: ', i);
+      insHI(i)
+      .then( r => {
+        console.log('R: ', r.insertId);
+        // console.log('R: ', r);
+      })
+      .catch( e => console.log('ERR: ', e));
+
+    }
+console.log('results: ', results);
+    res.status(200).json({rhi: null, error: null});
 
   });
 
