@@ -24,11 +24,21 @@ const getCID = () => {
   });
 };
 
-const insHI = (hi) => { console.log('insHI: ', hi);
+const insHI = (hi) => { // select hi and insert into fayu
   return new Promise( (resolve, reject) => {
-    pool.query(sqls.copy1_hi_ins, [hi], (err, rez) => {
+    pool.query(sqls.copy_hi_ins, [hi], (err, rez) => {
       if (err) { reject(err); }
-      resolve( rez );    });
+      resolve( rez );
+    });
+  });
+};
+
+const text2lid = (tuples) => { // bind zi LID with current chapter ID
+  return new Promise( (resolve, reject) => {
+    pool.query(sqls.i_zct, tuples, (err, rez) => {
+      if (err) { reject(err); }
+      resolve( rez );
+    });
   });
 };
 
@@ -42,6 +52,15 @@ module.exports = (app) => {
       insHI(i)
       .then( r => {
         console.log('R: ', r.insertId);
+        if (r.insertId > 0) {
+          const zi2txt = [r.insertId, req.body.chapter, 0];
+          text2lid(zi2txt)
+          .then( l => {
+            console.log('R--: ', r.insertId);
+            console.log('L--: ', l.insertId);
+          })
+          .catch( ee => console.log('EERR: ', ee));
+        }
         // console.log('R: ', r);
       })
       .catch( e => console.log('ERR: ', e));

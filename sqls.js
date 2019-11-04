@@ -25,7 +25,7 @@ sqls.d_text = 'DELETE FROM texts WHERE t_id=?';
 sqls.copy_hi_sel = 'SELECT bh_id, bh_has_tr, bh_hex, bh_sm, bh_tr, bh_pin, bh_trans FROM mova.bkrs_hi WHERE bh_id=?';
 sqls.copy_wd_sel = 'SELECT bw_id, bw_bh_id, bw_has_tr, bw_length, bw_sm, bw_tr, bw_pin, bw_trans FROM mova.bkrs_word WHERE bw_id=?';
 
-sqls.copy_hi_ins = 'INSERT INTO fayu.fayu_hi(bh_id, bh_has_tr, bh_hex, bh_sm, bh_tr, bh_pin, bh_trans) VALUES(?,?,?,?,?,?,?)';
+sqls.copy_hi_ins = `INSERT IGNORE INTO fayu.fayu_hi(bh_id, bh_has_tr, bh_hex, bh_sm, bh_tr, bh_pin, bh_trans) SELECT bh_id, bh_has_tr, bh_hex, bh_sm, bh_tr, bh_pin, bh_trans FROM mova.bkrs_hi WHERE bh_id =?`;
 
 
 sqls.copy1_hi_ins = 'INSERT IGNORE INTO fayu.fayu_hi(bh_id) VALUES(?)';
