@@ -1,5 +1,7 @@
 // fayu: save to DB and print PDF
-
+// const Rx = require('rxjs');
+const { Observable } = require('rxjs');
+const { tap, map, take } = require('rxjs/operators');
 const mysql = require('mysql');
 
 const pool = mysql.createPool({
@@ -13,6 +15,22 @@ const pool = mysql.createPool({
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const sqls = require('./sqls');
+
+// call Observable constructor pass it a subscriber function as argument
+new Observable(mysqlQ);
+// should return an Observable
+function mysqlQ (pool, sqls, values) {
+  return Observable.create( observer => {
+    pool.query(sqls, values, (err, rez, fields) => {
+      if (err) {
+        observer.error(err);
+      } else {
+        observer.next({rez:rez, fields:fields});
+      }
+      observer.complete();
+    });
+  });
+};
 
 const getCID = () => {
   return new Promise( (resolve, reject) => {
@@ -70,17 +88,26 @@ console.log('results: ', results);
     res.status(200).json({rhi: null, error: null});
 
   });
+    app.get('/fa/getLastChapter', (req, res) => {
+      // console.log('getLastChapter-GET');
+      mysqlQ(pool, sqls.s_lastChapter, [])
+      .pipe(
+       take(1),
+       tap( rez => console.log('REZ: ', rez)),
+       map( rez => JSON.parse(JSON.stringify(rez)).rez[0] )
+      )
+      .subscribe(
+       (rez) => {
+         // console.log('s-REZ: ', rez)
+         res.status(200).json({chapter_name: rez['c_chapter'], chapter_id: rez['c_id'], error: null});
+      },
+       (error) => {
+         console.log('s-ERR: ', error)
+         res.status(200).json({ chapter_name: null, chapter_id: null, error: error})
+      },
+       () => {console.log('getLastChapter completed!!!')}
+      )
 
-  app.get('/fa/getLastChapter', (req, res) => {
-    pool.query(sqls.s_lastChapter, (err, rez) => {
-      if (err) {
-        throw err;
-      } else if( typeof( rez ) !== 'undefined' && rez.length >= 1 && rez[0]['c_chapter'] ) {
-        res.status(200).json({chapter_name: rez[0]['c_chapter'], chapter_id: rez[0]['c_id'], error: null})
-      } else {
-        res.status(200).json({chapter_name: null, chapter_id: null, error: 'unknown error'})
-      }
-    });
   });
 
 //   sqls.s_chap = 'SELECT c_id, c_chapter FROM fayu.c_chapters WHERE c_id=?';
