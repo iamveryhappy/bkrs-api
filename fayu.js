@@ -14,19 +14,18 @@ const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const sqls = require('./sqls');
 
-const getCID = () => {
+const insCI = (ci) => {
   return new Promise( (resolve, reject) => {
-    pool.query(sqls.s_lastChapter, (err, rez) => {
-      if (err) { reject( err ) }
-      // console.log('getCID-rez: ', rez);
+    pool.query(sqls.copy_ci_inst, [ci], (err, rez) => {
+      if ( err ) { reject(err); }
       resolve( rez );
     });
   });
 };
 
-const insHI = (hi) => { // select hi and insert into fayu
+const insZI = (hi) => { // select hi and insert into fayu
   return new Promise( (resolve, reject) => {
-    pool.query(sqls.copy_hi_ins, [hi], (err, rez) => {
+    pool.query(sqls.copy_zi_ins, [hi], (err, rez) => {
       if (err) { reject(err); }
       resolve( rez );
     });
@@ -44,29 +43,51 @@ const text2lid = (tuples) => { // bind zi LID with current chapter ID
 
 module.exports = (app) => {
 
+  // IMPORTANT!!! TEXTid ISN'T CHAPTER ID!!!!!!!!!!!!!!!!!!!!!!!!!!!
   app.post('/fa/save', jsonParser, (req, res) => {
     console.log('faSAVE:', req.body);
     let results = {};
-    for (let i of req.body.zi){
-      console.log('I: ', i);
-      insHI(i)
-      .then( r => {
-        console.log('R: ', r.insertId);
-        if (r.insertId > 0) {
-          const zi2txt = [r.insertId, req.body.chapter, 0];
-          text2lid(zi2txt)
-          .then( l => {
-            console.log('R--: ', r.insertId);
-            console.log('L--: ', l.insertId);
-          })
-          .catch( ee => console.log('EERR: ', ee));
-        }
-        // console.log('R: ', r);
-      })
-      .catch( e => console.log('ERR: ', e));
 
+    if ( req.body.ci > 0 ){ // save words
+      for (let i of req.body.ci){
+        console.log('cI: ', i);
+        insCI(i)
+        .then( r => {
+          if(r.insertId > 0){
+            const ci2txt = [req.body.chapter, 0, r.insertId];
+            text2lid(zi2txt)
+            .then( l => {
+              console.log('ciR--: ', r.insertId);
+              console.log('ciL--: ', l.insertId);
+            })
+            .catch( ee => console.log('ciEERR: ', ee));
+          }
+        })
+        .catch( e => console.log('ciERR: ', e));
+      }
     }
-console.log('results: ', results);
+
+    if ( req.body.zi > 0 ) { // save chars
+      for (let i of req.body.zi){
+        console.log('hI: ', i);
+        insZI(i)
+        .then( r => {
+          console.log('R: ', r.insertId);
+          if (r.insertId > 0) {
+            const zi2txt = [req.body.chapter, r.insertId, 0];
+            text2lid(zi2txt)
+            .then( l => {
+              console.log('R--: ', r.insertId);
+              console.log('L--: ', l.insertId);
+            })
+            .catch( ee => console.log('ziEERR: ', ee));
+          }
+        })
+        .catch( e => console.log('ziERR: ', e));
+      }
+    }
+
+    console.log('results: ', results);
     res.status(200).json({rhi: null, error: null});
 
   });
