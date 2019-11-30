@@ -41,56 +41,70 @@ const text2lid = (tuples) => { // bind zi LID with current chapter ID
   });
 };
 
+async function insTXT (rq) {
+
+  const results = {
+    textID: null,
+    chapterID: rq.body.chapter,
+    ci: [],
+    zi: []
+  };
+
+  const txt = [rq.body.chapter, rq.body.raw, rq.body.markup];
+
+  // save txt to DB
+  results.textID = await new Promise( (resolve, reject) => {
+    pool.query(sqls.i_text, txt, (err, rez) => {
+      if ( err ) { reject(err); }
+      resolve( rez.insertId );
+    });
+  });
+
+  console.log('fRID: ', results.textID);
+
+  for ( let ci of rq.body.ci ) {
+    console.log('cI: ', ci);
+    let ciLID = await new Promise( (resolve, reject) => {
+      pool.query(sqls.copy_ci_inst, [ci], (err, rez) => {
+        if ( err ) { reject(err); }
+        resolve( rez.insertId );
+      });
+    });
+    results.ci.push(ciLID);
+  }
+
+  for ( let zi of rq.body.zi ) {
+    console.log( 'zI: ', zi);
+    let ziLID = await new Promise( (resolve, reject) => {
+      pool.query(sqls.copy_zi_ins, [zi], (err, rez) => {
+        if ( err ) { reject(err); }
+        resolve( rez.insertId );
+      });
+    });
+    results.zi.push(ziLID);
+  }
+
+  console.log('f-results: ', results);
+
+  return results;
+};
+
+
 module.exports = (app) => {
 
-  // IMPORTANT!!! TEXTid ISN'T CHAPTER ID!!!!!!!!!!!!!!!!!!!!!!!!!!!
   app.post('/fa/save', jsonParser, (req, res) => {
     console.log('faSAVE:', req.body);
-    let results = {};
-
-    if ( req.body.ci > 0 ){ // save words
-      for (let i of req.body.ci){
-        console.log('cI: ', i);
-        insCI(i)
-        .then( r => {
-          if(r.insertId > 0){
-            const ci2txt = [req.body.chapter, 0, r.insertId];
-            text2lid(zi2txt)
-            .then( l => {
-              console.log('ciR--: ', r.insertId);
-              console.log('ciL--: ', l.insertId);
-            })
-            .catch( ee => console.log('ciEERR: ', ee));
-          }
-        })
-        .catch( e => console.log('ciERR: ', e));
-      }
-    }
-
-    if ( req.body.zi > 0 ) { // save chars
-      for (let i of req.body.zi){
-        console.log('hI: ', i);
-        insZI(i)
-        .then( r => {
-          console.log('R: ', r.insertId);
-          if (r.insertId > 0) {
-            const zi2txt = [req.body.chapter, r.insertId, 0];
-            text2lid(zi2txt)
-            .then( l => {
-              console.log('R--: ', r.insertId);
-              console.log('L--: ', l.insertId);
-            })
-            .catch( ee => console.log('ziEERR: ', ee));
-          }
-        })
-        .catch( e => console.log('ziERR: ', e));
-      }
-    }
-
-    console.log('results: ', results);
-    res.status(200).json({rhi: null, error: null});
-
+    insTXT( req )
+    .then( rez => {
+      console.log('faSAVE-results-rez: ', rez);
+      res.status(200).json({results: rez, error: null});
+    })
+    .catch( e => {
+      console.log(e);
+      res.status(200).json({results: null, error: e});
+    });
   });
+  // IMPORTANT!!! TEXTid ISN'T CHAPTER ID!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   app.get('/fa/getLastChapter', (req, res) => {
     pool.query(sqls.s_lastChapter, (err, rez) => {

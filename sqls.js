@@ -15,7 +15,7 @@ sqls.i_zct = 'INSERT INTO zici_texts(zct_t_id, zct_bh_id, zct_bw_id) VALUES(?,?,
 sqls.s_zct = 'SELECT (zct_id, zct_t_id, zct_bh_id, zct_bw_id) FROM zici_texts WHERE zct_t_id=?';
 sqls.d_zct = 'DELETE FROM zice_texts WHERE zct_t_id=?';
 
-sqls.i_text = 'INSERT INTO texts(t_c_id, t_raw, t_mark) VALUES(?,?,?)';
+sqls.i_text = 'INSERT IGNORE INTO texts(t_c_id, t_raw, t_mark) VALUES(?,?,?)';
 sqls.s_text = 'SELECT t_chapter, t_raw, t_mark FROM texts WHERE t_id=?';
 sqls.d_text = 'DELETE FROM texts WHERE t_id=?';
 
