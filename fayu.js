@@ -1,4 +1,4 @@
-// fayu: save to DB and print PDF
+// fayu: save text and voca to DB
 
 const mysql = require('mysql');
 
@@ -14,40 +14,15 @@ const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 const sqls = require('./sqls');
 
-const insCI = (ci) => {
-  return new Promise( (resolve, reject) => {
-    pool.query(sqls.copy_ci_inst, [ci], (err, rez) => {
-      if ( err ) { reject(err); }
-      resolve( rez );
-    });
-  });
-};
-
-const insZI = (hi) => { // select hi and insert into fayu
-  return new Promise( (resolve, reject) => {
-    pool.query(sqls.copy_zi_ins, [hi], (err, rez) => {
-      if (err) { reject(err); }
-      resolve( rez );
-    });
-  });
-};
-
-const text2lid = (tuples) => { // bind zi LID with current chapter ID
-  return new Promise( (resolve, reject) => {
-    pool.query(sqls.i_zct, tuples, (err, rez) => {
-      if (err) { reject(err); }
-      resolve( rez );
-    });
-  });
-};
-
 async function insTXT (rq) {
 
   const results = {
     textID: null,
     chapterID: rq.body.chapter,
-    ci: [],
-    zi: []
+    ci:  [],
+    zi:  [],
+    cit: [],
+    zit: []
   };
 
   const txt = [rq.body.chapter, rq.body.raw, rq.body.markup];
@@ -60,10 +35,11 @@ async function insTXT (rq) {
     });
   });
 
-  console.log('fRID: ', results.textID);
+//   console.log('fRID: ', results.textID);
 
+  // find CI and save
   for ( let ci of rq.body.ci ) {
-    console.log('cI: ', ci);
+//     console.log('cI: ', ci);
     let ciLID = await new Promise( (resolve, reject) => {
       pool.query(sqls.copy_ci_inst, [ci], (err, rez) => {
         if ( err ) { reject(err); }
@@ -73,8 +49,9 @@ async function insTXT (rq) {
     results.ci.push(ciLID);
   }
 
+  // find ZI and save
   for ( let zi of rq.body.zi ) {
-    console.log( 'zI: ', zi);
+//     console.log( 'zI: ', zi);
     let ziLID = await new Promise( (resolve, reject) => {
       pool.query(sqls.copy_zi_ins, [zi], (err, rez) => {
         if ( err ) { reject(err); }
@@ -84,7 +61,29 @@ async function insTXT (rq) {
     results.zi.push(ziLID);
   }
 
-  console.log('f-results: ', results);
+  // bind CI & ZI with the text(ID)
+  // check: how mahy tied of ZI (zit)
+  for ( let zID of results.zi ) { // zct_t_id, zct_bh_id, zct_bw_id
+    let z2tLID = await new Promise( (resolve, reject) => {
+      pool.query( sqls.i_zct, [results.textID, zID, undefined], (err, rez) => {
+        if (err) { reject(err); }
+        resolve( rez.insertId );
+      });
+    });
+    results.zit.push(z2tLID);
+  }
+  // check: how mahy tied of CI (cit)
+  for ( let cID of results.ci ) { // zct_t_id, zct_bh_id, zct_bw_id
+    let c2tLID = await new Promise( (resolve, reject) => {
+      pool.query( sqls.i_zct, [results.textID, undefined, cID], (err, rez) => {
+        if (err) { reject(err); }
+        resolve( rez.insertId );
+      });
+    });
+    results.cit.push(c2tLID);
+  }
+
+//   console.log('f-results: ', results);
 
   return results;
 };
@@ -93,7 +92,7 @@ async function insTXT (rq) {
 module.exports = (app) => {
 
   app.post('/fa/save', jsonParser, (req, res) => {
-    console.log('faSAVE:', req.body);
+//     console.log('faSAVE:', req.body);
     insTXT( req )
     .then( rez => {
       console.log('faSAVE-results-rez: ', rez);
@@ -104,7 +103,6 @@ module.exports = (app) => {
       res.status(200).json({results: null, error: e});
     });
   });
-  // IMPORTANT!!! TEXTid ISN'T CHAPTER ID!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   app.get('/fa/getLastChapter', (req, res) => {
     pool.query(sqls.s_lastChapter, (err, rez) => {
@@ -132,12 +130,3 @@ module.exports = (app) => {
     );
   });
 };
-
-// '/fa/save'
-// zici_texts -> return texts.t_id
-//
-// ->{
-//   ci: [],
-//   zi: []
-// } -> save to fayu_hi, fayu_word ->faw_id + fa_id
-// for ([faw_id, fa_id] -- t_id) -> zici_texts
